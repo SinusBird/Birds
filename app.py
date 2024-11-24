@@ -3,8 +3,8 @@ import plotly.express as px
 import pandas as pd
 import numpy as np
 
-# Load data
-df = pd.read_csv('https://raw.githubusercontent.com/SinusBird/Birds/refs/heads/main/BirdCatches.csv', encoding='unicode_escape')
+# Load data, vision
+df = pd.read_csv('https://raw.githubusercontent.com/SinusBird/Birds/refs/heads/main/BirdCatches2.csv', encoding='unicode_escape')
 
 # Function to randomly duplicate rows and increment BirdID
 def random_duplicate_and_increment_birdid(df, max_duplicates=5, seed=None):

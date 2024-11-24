@@ -2,9 +2,21 @@ from dash import Dash, html, dcc, callback, Output, Input
 import plotly.express as px
 import pandas as pd
 import numpy as np
+from birddataload import load_csv_likabrow, load_wikidatatodf
 
-# Load data
+
+# Load data to analyze
 df = pd.read_csv('https://raw.githubusercontent.com/SinusBird/Birds/refs/heads/main/BirdCatches2.csv', encoding='unicode_escape')
+
+# Load further bird data to displac
+df_birdid = load_csv_likabrow('https://euring.org/files/documents/EURINGSpeciesCodesMay2024.csv')
+print("test test ", df_birdid.head())
+
+# Load name translations --- NOT DONE YET
+# df_birdnames = load_wikidatatodf('https://en.wikipedia.org/wiki/List_of_birds_of_Germany')
+
+# Merge species ID with the original dataframe to add species names
+# TBD
 
 # Function to randomly duplicate rows and increment BirdID (based on current distribution)
 def random_duplicate_and_increment_birdid(df, max_duplicates=20, seed=None):

@@ -30,7 +30,7 @@ def load_wikidatatodf(path):
     response = requests.get(url)
     soup = BeautifulSoup(response.text, 'html.parser')
 
-    # find the bird data table and get rows to lists
+    # find the bird data columns and get rows to lists
     table = soup.find({'class': 'div-col'})
     rows = table.find_all('tr')
 

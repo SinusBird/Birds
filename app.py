@@ -2,8 +2,8 @@ from dash import Dash, html, dcc, callback, Output, Input
 import plotly.express as px
 import pandas as pd
 import numpy as np
-from birddataload import load_csv_likabrow, load_wikidatatodf
-
+from birddataload import load_csv_likabrow, load_birddatatodf
+from datadupli import random_duplicate_and_increment_birdid, generate_additional_dates
 
 # Load data to analyze
 df = pd.read_csv('https://raw.githubusercontent.com/SinusBird/Birds/refs/heads/main/BirdCatches2.csv', encoding='unicode_escape')
@@ -12,48 +12,21 @@ df = pd.read_csv('https://raw.githubusercontent.com/SinusBird/Birds/refs/heads/m
 df_birdid = load_csv_likabrow('https://euring.org/files/documents/EURINGSpeciesCodesMay2024.csv')
 print("test test ", df_birdid.head())
 
-# Load name translations --- NOT DONE YET
-# df_birdnames = load_wikidatatodf('https://en.wikipedia.org/wiki/List_of_birds_of_Germany')
+# Load name translations --- from club500 URL, ask about usage before data publication!!!!
+df_birdnames = load_birddatatodf('https://www.club300.de/publications/wp-bird-list.php', debug=True)
+
+if df_birdnames is not None: 
+    print("Bird names loaded")
+    print(df_birdnames.head())  # Zeige die ersten Zeilen des DataFrames
+else:
+    print("No bird names available")
 
 # Merge species ID with the original dataframe to add species names
 # TBD
 
-# Function to randomly duplicate rows and increment BirdID (based on current distribution)
-def random_duplicate_and_increment_birdid(df, max_duplicates=20, seed=None):
-    if seed is not None:
-        np.random.seed(seed)  # Optional: Set seed for reproducibility
-
-    # Generate a random number of duplicates for each row, based on the distribution of current data
-    repeat_counts = np.random.randint(1, max_duplicates + 1, size=len(df))
-    
-    # Repeat rows based on the random counts
-    duplicated_df = df.loc[df.index.repeat(repeat_counts)].reset_index(drop=True)
-    
-    # Update BirdID with a continuous sequence
-    duplicated_df['BirdID'] = np.arange(1, len(duplicated_df) + 1)
-    
-    return duplicated_df, repeat_counts
-
-# Apply the function to add more data
+# add more birds for catching and more time variety
 df, repeat_counts = random_duplicate_and_increment_birdid(df, max_duplicates=20, seed=42)
-
-# Generate additional random dates to spread out catches more evenly over the year
-def generate_additional_dates(df, n_extra=2000, seed=None):
-    if seed is not None:
-        np.random.seed(seed)
-    
-    # Create random additional date range from the original data
-    date_range = pd.date_range(start='2021-01-01', end='2023-12-31', freq='D')
-    extra_dates = np.random.choice(date_range, size=n_extra, replace=True)
-    
-    # Create new data entries with random dates
-    additional_data = df.sample(n=n_extra, replace=True).copy()
-    additional_data['DateTimeID'] = extra_dates
-    additional_data['BirdID'] = np.arange(len(df)+1, len(df)+n_extra+1)  # New unique BirdIDs
-    return pd.concat([df, additional_data], ignore_index=True)
-
-# Apply the function to add more random catches
-df = generate_additional_dates(df, n_extra=2000, seed=42)
+df = generate_additional_dates(df, period_start='2021-01-01', period_end='2023-12-31', n_extra=2000, seed=42)
 
 # Ensure DateTimeID is in the correct datetime format, and remove rows with invalid dates
 df['DateTimeID'] = pd.to_datetime(df['DateTimeID'], errors='coerce')
@@ -62,7 +35,7 @@ df['DateTimeID'] = pd.to_datetime(df['DateTimeID'], errors='coerce')
 df = df.dropna(subset=['DateTimeID'])
 
 # Initialize Dash app
-app = Dash(__name__)  # Correct way to initialize Dash app
+app = Dash(__name__)  
 
 app.layout = html.Div([
     html.H1(children='Number of ringing', style={'textAlign': 'center'}),

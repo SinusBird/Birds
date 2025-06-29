@@ -2,14 +2,15 @@ from dash import Dash, html, dcc, callback, Output, Input
 import plotly.express as px
 import pandas as pd
 import numpy as np
-from birddataload import load_csv_likabrow, load_birddatatodf
+from birddataload import load_csv_likabrow, load_birddatatodf, get_latest_euring_species_code_url
 from datadupli import random_duplicate_and_increment_birdid, generate_additional_dates
 
 # Load data to analyze
 df = pd.read_csv('https://raw.githubusercontent.com/SinusBird/Birds/refs/heads/main/BirdCatches2.csv', encoding='unicode_escape')
 
-# Load further bird data to display
-df_birdid = load_csv_likabrow('https://euring.org/files/documents/EURING_SpeciesCodes_IOC15_1.csv') # zu dynamischer Auswahl der neusten Datei ändern!
+# Load further bird data to display names
+euring_species_url = get_latest_euring_species_code_url()
+df_birdid = load_csv_likabrow(euring_species_url)
 print("test test ", df_birdid.head())
 
 # Load name translations --- from club500 URL, ask about usage before data publication!!!!

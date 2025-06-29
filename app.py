@@ -9,7 +9,7 @@ from datadupli import random_duplicate_and_increment_birdid, generate_additional
 df = pd.read_csv('https://raw.githubusercontent.com/SinusBird/Birds/refs/heads/main/BirdCatches2.csv', encoding='unicode_escape')
 
 # Load further bird data to display
-df_birdid = load_csv_likabrow('https://euring.org/files/documents/EURINGSpeciesCodesMay2024.csv')
+df_birdid = load_csv_likabrow('https://euring.org/files/documents/EURINGSpeciesCodesMay2024.csv') # zu dynamischer Auswahl der neusten Datei ändern!
 print("test test ", df_birdid.head())
 
 # Load name translations --- from club500 URL, ask about usage before data publication!!!!

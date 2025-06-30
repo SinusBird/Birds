@@ -3,7 +3,8 @@ import requests
 from io import StringIO
 from bs4 import BeautifulSoup
 import traceback
-
+import requests
+import re
 
 # Behave like a browser to download file to load species ID and both Latin and German names
 def load_csv_likabrow(url):
@@ -21,7 +22,7 @@ def load_csv_likabrow(url):
         print(f'Failed to retrieve data: {response.status_code}')
 
 # use BeautifulSoup to bird name data from website (german, english, latin names)
-def load_birddatatodf(url, debug=False): 
+def load_birddatatodf(url, debug=False):
     try:
         response = requests.get(url)
         response.raise_for_status()
@@ -43,7 +44,7 @@ def load_birddatatodf(url, debug=False):
                 data.append([ger, eng, lat])
             elif debug:
                 print(row)
-        columns = ["Deutscher Name", "Englischer Name", "Lateinischer Name"] 
+        columns = ["Deutscher Name", "Englischer Name", "Lateinischer Name"]
         d = pd.DataFrame(data, columns=columns)
         print(d.head())
         return pd.DataFrame(data, columns=columns)
@@ -51,9 +52,9 @@ def load_birddatatodf(url, debug=False):
 
     # handle load issues
     except Exception as e:
-        traceback.print_exc() 
+        traceback.print_exc()
         #print(f'Issue with data load from {url}: {e}')
-        return None  
+        return None
 
 def laod_ger_birds(url):
     try:
@@ -69,15 +70,41 @@ def laod_ger_birds(url):
             eng = text[1]
             lat = text[2]
             data.append([ger, eng, lat])
-        columns = ["Deutscher Name", "Englischer Name", "Lateinischer Name"] 
+        columns = ["Deutscher Name", "Englischer Name", "Lateinischer Name"]
         df = pd.DataFrame(data, columns=columns)
         print(df)
         return df
 
     except Exception as e:
-        traceback.print_exc() 
+        traceback.print_exc()
         #print(f'Issue with data load from {url}: {e}')
-        return None    
+        return None
 
 bla = laod_ger_birds('https://www.club300.de/ranking/birdlist_de.php')
+
+
+def get_latest_euring_species_code_url():
+    url = 'https://euring.org/data-and-codes/euring-codes'  # Anpassen, falls nötig
+    response = requests.get(url)
+    soup = BeautifulSoup(response.text, 'html.parser')
+
+    # Begrenze die Suche auf den "Current Codes"-Block
+    current_codes_block = soup.select_one('#block-views-current-codes-block')
+    if not current_codes_block:
+        return None
+
+    # Titel-Suchmuster für Species Codes
+    pattern = re.compile(r'^EURING Species Codes.*', re.IGNORECASE)
+
+    for row in current_codes_block.select('.views-row'):
+        title = row.select_one('.views-field-title .field-content')
+        if title and pattern.match(title.text.strip()):
+            link_tag = row.select_one('a[href$=".csv"]')
+            if link_tag:
+                href = link_tag['href']
+                return f'https://euring.org{href}' if href.startswith('/') else href
+
+    return None  # Falls kein Treffer gefunden wurde
+
+
 

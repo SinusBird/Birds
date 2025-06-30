@@ -84,7 +84,7 @@ bla = laod_ger_birds('https://www.club300.de/ranking/birdlist_de.php')
 
 
 def get_latest_euring_species_code_url():
-    url = 'https://euring.org/data-and-codes'  # Anpassen, falls nötig
+    url = 'https://euring.org/data-and-codes/euring-codes'  # Anpassen, falls nötig
     response = requests.get(url)
     soup = BeautifulSoup(response.text, 'html.parser')
 

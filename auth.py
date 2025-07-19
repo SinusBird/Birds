@@ -2,8 +2,11 @@ import json
 import bcrypt
 
 def load_users(path="users.json"):
-    with open(path, "r") as f:
-        return json.load(f)
+    try:
+        with open(path, "r") as f:
+            return json.load(f)
+    except FileNotFoundError:
+        return {}
 
 def verify_login(username, password):
     users = load_users()

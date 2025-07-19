@@ -5,6 +5,7 @@ import plotly.express as px
 import pandas as pd
 import numpy as np
 import flask
+import bcrypt
 from auth import verify_login
 from birddataload import load_csv_likabrow, load_birddatatodf, get_latest_euring_species_code_url
 from datadupli import random_duplicate_and_increment_birdid, generate_additional_dates
@@ -114,7 +115,6 @@ def display_page(_):
     else:
         return login_layout
 
-# Login / Logout Handling
 @app.callback(
     Output("page-content", "children", allow_duplicate=True),
     Output("login-message", "children"),
@@ -124,7 +124,7 @@ def display_page(_):
     State("input-password", "value"),
     prevent_initial_call=True
 )
-def login_logout(n_login, n_logout, username, password):
+def login_logout(n_login, n_logout, username, password): # n_ trigger required
     triggered_id = ctx.triggered_id
 
     if triggered_id == "logout-button":
@@ -132,14 +132,14 @@ def login_logout(n_login, n_logout, username, password):
         return login_layout, ""
 
     if triggered_id == "login-button":
-        # Beispiel: hartkodierte Nutzerprüfung
-        if username == "testuser" and password == "geheim":
+        if verify_login(username, password):
             flask.session["logged_in"] = True
             return main_layout, ""
         else:
             return login_layout, "❌ Falscher Benutzername oder Passwort"
 
     raise dash.exceptions.PreventUpdate
+
 
 
 @app.callback(

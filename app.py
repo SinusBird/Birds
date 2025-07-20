@@ -76,13 +76,12 @@ def display_page(session_data, pathname):
     else:
         return create_login_form()  # Show login form
 
-
 @callback(
     [Output("session", "data"),
-     Output("login-output", "children")],
+    Output("login-output", "children")],
     Input("login-button", "n_clicks"),
     [State("username", "value"),
-     State("password", "value")]
+    State("password", "value")]
 )
 def handle_login(n_clicks, username, password):
     """Handle login attempts"""

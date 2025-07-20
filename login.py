@@ -12,6 +12,7 @@ def create_login_form():
             dbc.Col([
                 dbc.Card([
                     dbc.CardHeader(html.H3("🦉 Bird Analytics - Login", className="text-center")),
+                    html.Div(id="login-output", className="mb-3"),
                     dbc.CardBody([
                         dbc.Form([
                             dbc.Row([
@@ -39,7 +40,6 @@ def create_login_form():
                         ])
                     ])
                 ], style={"maxWidth": "400px"}),
-                html.Div(id="login-output", className="mt-3")
             ], width=12, className="d-flex justify-content-center")
         ], className="min-vh-100 align-items-center")
     ])

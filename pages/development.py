@@ -89,9 +89,8 @@ layout = create_layout_with_sidebar(main_layout)
     Input('dropdown-selection', 'value'),
     Input('aggregation-level', 'value'),
     Input('bar-mode', 'value'),
-    Input("session", "data")
+    Input('session', 'data')
 )
-@require_auth
 def update_graph(bird_types, aggregation_level, bar_mode):
     # Ensure bird_types is always a list, even if 'all' is selected
     if 'all' in bird_types or not bird_types:  # If 'all' is selected or no bird types are selected

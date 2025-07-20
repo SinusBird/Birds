@@ -81,7 +81,8 @@ main_layout = (
             id='bar-mode',
             clearable=False,
             style={'width': '48%', 'display': 'inline-block', 'fontFamily': 'Leto, sans-serif'}
-        )
+        ),
+        dcc.Graph(id='graph-content')
     ], style={'marginTop': '20px'})
 ]))
 

@@ -138,6 +138,10 @@ def update_graph(bird_types, aggregation_level, bar_mode, session_data, relayout
     # Rename BirdID to UniqueBirdCount
     grouped.rename(columns={'BirdID': 'UniqueBirdCount'}, inplace=True)
     
+    # Calculate total birds per month/year for the x-axis labels
+    total_birds_per_period = dff.groupby('Aggregation')['BirdID'].nunique().reset_index()
+    total_birds_per_period.rename(columns={'BirdID': 'TotalBirdsCount'}, inplace=True)
+    
     # Filter data based on zoom range if available
     zoom_filtered_dff = dff.copy()
     if relayout_data and ('xaxis.range' in relayout_data or 'xaxis.range[0]' in relayout_data):
@@ -175,10 +179,12 @@ def update_graph(bird_types, aggregation_level, bar_mode, session_data, relayout
     # Convert Aggregation back to datetime for better plotting if monthly
     if aggregation_level == 'M':
         grouped['Aggregation'] = pd.to_datetime(grouped['Aggregation'], format='%Y-%m')
+        total_birds_per_period['Aggregation'] = pd.to_datetime(total_birds_per_period['Aggregation'], format='%Y-%m')
 
     # Ensure that Aggregation is treated as categorical when 'Year' aggregation is selected
     if aggregation_level == 'Y':
         grouped['Aggregation'] = grouped['Aggregation'].astype(str)  # Convert to string for proper X-axis formatting
+        total_birds_per_period['Aggregation'] = total_birds_per_period['Aggregation'].astype(str)
 
     # Define a color scale with visually distinct but not too vibrant colors
     color_scale = px.colors.qualitative.Set3
@@ -244,21 +250,54 @@ def update_graph(bird_types, aggregation_level, bar_mode, session_data, relayout
         textfont=dict(size=12, color='black')  # Use consistent font size
     )
 
-    # Update tick format for X-axis
+    # Update tick format for X-axis and add total bird counts below the labels
     if aggregation_level == 'M':
+        # Create a dictionary mapping dates to their total bird counts
+        date_to_total = dict(zip(total_birds_per_period['Aggregation'], total_birds_per_period['TotalBirdsCount']))
+        
+        # Get all unique dates from the grouped dataframe
+        all_dates = sorted(grouped['Aggregation'].unique())
+        
+        # Create custom tick texts with total counts below the month labels
+        tick_texts = []
+        for date in all_dates:
+            month_year = date.strftime('%b %Y')
+            total = date_to_total.get(date, 0)
+            tick_texts.append(f"{month_year}<br>Total: {total}")
+        
         fig.update_layout(
             xaxis=dict(
-                tickformat='%b %Y',
+                # Use custom tick texts with total counts
+                tickvals=all_dates,
+                ticktext=tick_texts,
                 title='Month',
+                # Show more ticks (labels) for months - display as many as possible
+                nticks=50,  # Set a high number to show more ticks
                 # Preserve any existing range settings
                 **({"range": layout_updates['xaxis'].get('range')} if layout_updates['xaxis'].get('range') else {})
             )
         )
     elif aggregation_level == 'Y':
+        # Create a dictionary mapping years to their total bird counts
+        year_to_total = dict(zip(total_birds_per_period['Aggregation'], total_birds_per_period['TotalBirdsCount']))
+        
+        # Get all unique years from the grouped dataframe
+        all_years = sorted(grouped['Aggregation'].unique())
+        
+        # Create custom tick texts with total counts below the year labels
+        tick_texts = []
+        for year in all_years:
+            total = year_to_total.get(year, 0)
+            tick_texts.append(f"{year}<br>Total: {total}")
+        
         fig.update_layout(
             xaxis=dict(
-                tickformat='%Y',
+                # Use custom tick texts with total counts
+                tickvals=all_years,
+                ticktext=tick_texts,
                 title='Year',
+                # Show all year labels
+                nticks=50,  # Set a high number to show more ticks
                 # Preserve any existing range settings
                 **({"range": layout_updates['xaxis'].get('range')} if layout_updates['xaxis'].get('range') else {})
             )

@@ -2,7 +2,6 @@ import html
 import dash
 import pandas as pd
 import plotly.express as px
-from sympy import false
 
 from birddataload import get_latest_euring_species_code_url, load_csv_likabrow, load_birddatatodf
 from datadupli import random_duplicate_and_increment_birdid, generate_additional_dates
@@ -22,7 +21,7 @@ df_birdid = load_csv_likabrow(euring_species_url)
 #print("test test ", df_birdid.head())
 
 # Load name translations --- from club500 URL, ask about usage before data publication!!!!
-df_birdnames = load_birddatatodf('https://www.club300.de/publications/wp-bird-list.php', debug=false)
+df_birdnames = load_birddatatodf('https://www.club300.de/publications/wp-bird-list.php', debug=False)
 
 if df_birdnames is not None:
     print("Bird names loaded")

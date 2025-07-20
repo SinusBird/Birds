@@ -81,6 +81,19 @@ main_layout = (
             clearable=False,
             style={'width': '48%', 'display': 'inline-block', 'fontFamily': 'Leto, sans-serif'}
         ),
+        html.Button(
+            'Reset Zoom', 
+            id='reset-zoom-button',
+            style={
+                'marginTop': '10px',
+                'marginBottom': '10px',
+                'fontFamily': 'Leto, sans-serif',
+                'backgroundColor': '#f8f9fa',
+                'border': '1px solid #ddd',
+                'borderRadius': '4px',
+                'padding': '5px 10px'
+            }
+        ),
         dcc.Graph(id='graph-content')
     ], style={'marginTop': '20px'})
 ]))
@@ -92,9 +105,14 @@ layout = create_layout_with_sidebar(main_layout)
     Input('dropdown-selection', 'value'),
     Input('aggregation-level', 'value'),
     Input('bar-mode', 'value'),
-    Input('session', 'data')
+    Input('session', 'data'),
+    Input('graph-content', 'relayoutData'),
+    Input('reset-zoom-button', 'n_clicks')
 )
-def update_graph(bird_types, aggregation_level, bar_mode, session_data):
+def update_graph(bird_types, aggregation_level, bar_mode, session_data, relayout_data, reset_clicks):
+    # Check if reset button was clicked
+    if ctx.triggered_id == 'reset-zoom-button':
+        relayout_data = None  # Reset zoom by setting relayout_data to None
     #if not session_data or not session_data.get('authenticated'):
     #    return create_placeholder_figure("🔒 Please log in to view bird analytics")
 
@@ -119,6 +137,40 @@ def update_graph(bird_types, aggregation_level, bar_mode, session_data):
 
     # Rename BirdID to UniqueBirdCount
     grouped.rename(columns={'BirdID': 'UniqueBirdCount'}, inplace=True)
+    
+    # Filter data based on zoom range if available
+    zoom_filtered_dff = dff.copy()
+    if relayout_data and ('xaxis.range' in relayout_data or 'xaxis.range[0]' in relayout_data):
+        # Get zoom range
+        if 'xaxis.range[0]' in relayout_data and 'xaxis.range[1]' in relayout_data:
+            start_date = pd.to_datetime(relayout_data['xaxis.range[0]'])
+            end_date = pd.to_datetime(relayout_data['xaxis.range[1]'])
+        elif 'xaxis.range' in relayout_data:
+            start_date = pd.to_datetime(relayout_data['xaxis.range'][0])
+            end_date = pd.to_datetime(relayout_data['xaxis.range'][1])
+        else:
+            start_date = None
+            end_date = None
+            
+        # Apply filter if we have valid dates
+        if start_date and end_date:
+            if aggregation_level == 'M':
+                # For monthly aggregation, filter by the actual date
+                zoom_filtered_dff = zoom_filtered_dff[
+                    (zoom_filtered_dff['DateTimeID'] >= start_date) & 
+                    (zoom_filtered_dff['DateTimeID'] <= end_date)
+                ]
+            elif aggregation_level == 'Y':
+                # For yearly aggregation, extract the year and filter
+                start_year = start_date.year
+                end_year = end_date.year
+                zoom_filtered_dff = zoom_filtered_dff[
+                    (zoom_filtered_dff['DateTimeID'].dt.year >= start_year) & 
+                    (zoom_filtered_dff['DateTimeID'].dt.year <= end_year)
+                ]
+    
+    # Calculate total count per bird type for legend based on zoom-filtered data
+    bird_totals = zoom_filtered_dff.groupby('BirdType')['BirdID'].nunique().to_dict()
 
     # Convert Aggregation back to datetime for better plotting if monthly
     if aggregation_level == 'M':
@@ -131,25 +183,50 @@ def update_graph(bird_types, aggregation_level, bar_mode, session_data):
     # Define a color scale with visually distinct but not too vibrant colors
     color_scale = px.colors.qualitative.Set3
 
+    # Determine if we're in a zoomed view
+    is_zoomed = relayout_data and ('xaxis.range' in relayout_data or 'xaxis.range[0]' in relayout_data)
+    
+    # Create title with zoom indicator
+    title = 'Birds first catches for ringing'
+    if is_zoomed:
+        title += ' (Zoomed View)'
+    
     # Create the bar plot
     fig = px.bar(grouped,
                  x='Aggregation',
                  y='UniqueBirdCount',
                  color='BirdType',
-                 title='Birds first catches for ringing',
+                 title=title,
                  labels={'UniqueBirdCount': '', 'Aggregation': 'Date', 'BirdType': 'Bird type'},
                  barmode=bar_mode,  # Use stacked or grouped bars
                  color_discrete_sequence=color_scale)  # Use a custom, less vibrant color scale
 
     # Update layout for better readability and remove axis label for y-axis
-    fig.update_layout(
-        plot_bgcolor='white',  # Set the background color to white
-        xaxis=dict(showgrid=True, gridcolor='lightgray', gridwidth=0.5),  # Make x-axis grid lines medium gray
-        yaxis=dict(showgrid=True, gridcolor='lightgray', gridwidth=0.5, showticklabels=False),  # Remove Y-axis labels
-        title={'x': 0.5},  # Center the title
-        legend_title_text='Bird type',
-        height=600  # Increase height by 30% to create more space for labels
-    )
+    layout_updates = {
+        'plot_bgcolor': 'white',  # Set the background color to white
+        'xaxis': dict(showgrid=True, gridcolor='lightgray', gridwidth=0.5),  # Make x-axis grid lines medium gray
+        'yaxis': dict(showgrid=True, gridcolor='lightgray', gridwidth=0.5, showticklabels=False),  # Remove Y-axis labels
+        'title': {'x': 0.5},  # Center the title
+        'legend_title_text': 'Bird type',
+        'height': 600  # Increase height by 30% to create more space for labels
+    }
+    
+    # Preserve zoom state if we're zoomed in
+    if is_zoomed and not ctx.triggered_id == 'reset-zoom-button':
+        # Extract the zoom range from relayoutData
+        if 'xaxis.range[0]' in relayout_data and 'xaxis.range[1]' in relayout_data:
+            layout_updates['xaxis']['range'] = [relayout_data['xaxis.range[0]'], relayout_data['xaxis.range[1]']]
+        elif 'xaxis.range' in relayout_data:
+            layout_updates['xaxis']['range'] = relayout_data['xaxis.range']
+    
+    fig.update_layout(**layout_updates)
+    
+    # Update legend to include total counts
+    for i, bird_type in enumerate(fig.data):
+        if bird_type.name in bird_totals:
+            # Add a 👁️ symbol to indicate counts are for visible (zoomed) area only
+            prefix = "👁️ " if is_zoomed else ""
+            fig.data[i].name = f"{prefix}{bird_type.name} ({bird_totals[bird_type.name]})"
 
     # Add bar labels if they fit
     fig.update_traces(
@@ -172,14 +249,18 @@ def update_graph(bird_types, aggregation_level, bar_mode, session_data):
         fig.update_layout(
             xaxis=dict(
                 tickformat='%b %Y',
-                title='Month'
+                title='Month',
+                # Preserve any existing range settings
+                **({"range": layout_updates['xaxis'].get('range')} if layout_updates['xaxis'].get('range') else {})
             )
         )
     elif aggregation_level == 'Y':
         fig.update_layout(
             xaxis=dict(
                 tickformat='%Y',
-                title='Year'
+                title='Year',
+                # Preserve any existing range settings
+                **({"range": layout_updates['xaxis'].get('range')} if layout_updates['xaxis'].get('range') else {})
             )
         )
 

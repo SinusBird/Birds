@@ -26,7 +26,7 @@ def add_user(username, plain_password, role="user"):
     save_users(users)
     print(f"✅ Benutzer '{username}' wurde hinzugefügt.")
 
-    # Beispiel: Test-User anlegen
-
-#if __name__ == "__main__":
-#    add_user("name", "pw.", role="tester")
+if __name__ == "__main__":
+    username = input("Benutzername: ")
+    password = input("Passwort: ")
+    add_user(username, password)

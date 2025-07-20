@@ -2,9 +2,11 @@ import html
 import dash
 import pandas as pd
 import plotly.express as px
+from sympy import false
+
 from birddataload import get_latest_euring_species_code_url, load_csv_likabrow, load_birddatatodf
 from datadupli import random_duplicate_and_increment_birdid, generate_additional_dates
-from restrict_access import require_auth
+from placeholder import create_placeholder_figure
 from sidebar import create_layout_with_sidebar
 from style import main_title
 from dash import Dash, html, dcc, callback, Output, Input, State, ctx
@@ -20,7 +22,7 @@ df_birdid = load_csv_likabrow(euring_species_url)
 #print("test test ", df_birdid.head())
 
 # Load name translations --- from club500 URL, ask about usage before data publication!!!!
-df_birdnames = load_birddatatodf('https://www.club300.de/publications/wp-bird-list.php', debug=True)
+df_birdnames = load_birddatatodf('https://www.club300.de/publications/wp-bird-list.php', debug=false)
 
 if df_birdnames is not None:
     print("Bird names loaded")
@@ -40,6 +42,7 @@ df['DateTimeID'] = pd.to_datetime(df['DateTimeID'], errors='coerce')
 
 # Drop rows where DateTimeID could not be parsed
 df = df.dropna(subset=['DateTimeID'])
+#print("Data", df.head())
 
 # main page layout - currently a bar charts with number of ringings over time
 main_layout = (
@@ -91,7 +94,10 @@ layout = create_layout_with_sidebar(main_layout)
     Input('bar-mode', 'value'),
     Input('session', 'data')
 )
-def update_graph(bird_types, aggregation_level, bar_mode):
+def update_graph(bird_types, aggregation_level, bar_mode, session_data):
+    #if not session_data or not session_data.get('authenticated'):
+    #    return create_placeholder_figure("🔒 Please log in to view bird analytics")
+
     # Ensure bird_types is always a list, even if 'all' is selected
     if 'all' in bird_types or not bird_types:  # If 'all' is selected or no bird types are selected
         df_filtered = df  # Include all bird types

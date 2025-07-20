@@ -42,18 +42,17 @@ def load_birddatatodf(url, debug=False):
                 eng = fields[3].get_text()
                 lat = fields[4].get_text()
                 data.append([ger, eng, lat])
-            elif debug:
-                print(row)
         columns = ["Deutscher Name", "Englischer Name", "Lateinischer Name"]
         d = pd.DataFrame(data, columns=columns)
-        print(d.head())
+        if debug:
+            print('Website data',d.head())
         return pd.DataFrame(data, columns=columns)
 
 
     # handle load issues
     except Exception as e:
         traceback.print_exc()
-        #print(f'Issue with data load from {url}: {e}')
+        print(f'Issue with data load from {url}: {e}')
         return None
 
 def laod_ger_birds(url):
@@ -72,12 +71,13 @@ def laod_ger_birds(url):
             data.append([ger, eng, lat])
         columns = ["Deutscher Name", "Englischer Name", "Lateinischer Name"]
         df = pd.DataFrame(data, columns=columns)
-        print(df)
+        debug: (
+            print(df))
         return df
 
     except Exception as e:
         traceback.print_exc()
-        #print(f'Issue with data load from {url}: {e}')
+        print(f'Issue with data load from {url}: {e}')
         return None
 
 bla = laod_ger_birds('https://www.club300.de/ranking/birdlist_de.php')

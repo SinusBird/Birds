@@ -53,10 +53,6 @@ def create_authenticated_layout():
                 dcc.Link(f"{page['name']} - {page['path']}", href=page["relative_path"])
             ) for page in dash.page_registry.values()
         ]),
-        # Add logout button to your navigation
-        html.Div([
-            dbc.Button("Logout", id="logout-button", color="danger", size="sm", className="m-2")
-        ]),
         dash.page_container
     ])
 

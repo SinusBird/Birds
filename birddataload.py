@@ -11,7 +11,12 @@ def load_csv_likabrow(url):
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36'
     }
-    response = requests.get(url, headers=headers)
+
+    try:
+        response = requests.get(url, headers=headers)
+        response. raise_for_status()
+    except requests.exceptions.HTTPError as err: #is not working
+        print("Issue with euring website: ", err)
 
     # Check if the request was successful
     if response.status_code == 200:
@@ -85,8 +90,11 @@ bla = laod_ger_birds('https://www.club300.de/ranking/birdlist_de.php')
 
 def get_latest_euring_species_code_url():
     url = 'https://euring.org/data-and-codes/euring-codes'  # Anpassen, falls nötig
-    response = requests.get(url)
-    soup = BeautifulSoup(response.text, 'html.parser')
+    try:
+        response = requests.get(url)
+        soup = BeautifulSoup(response.text, 'html.parser')
+    except requests.exceptions.HTTPError as err:
+        raise SystemExit(err)
 
     # Begrenze die Suche auf den "Current Codes"-Block
     current_codes_block = soup.select_one('#block-views-current-codes-block')

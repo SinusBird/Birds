@@ -1,18 +1,14 @@
-import html
 import dash
 import pandas as pd
 import plotly.express as px
 import datetime
 import dash_bootstrap_components as dbc
 
-from birddataload import get_latest_euring_species_code_url, load_csv_likabrow, load_birddatatodf
-from datadupli import random_duplicate_and_increment_birdid, generate_additional_dates
-from placeholder import create_placeholder_figure
 from sidebar import create_layout_with_sidebar
 from style import main_title
 from dash import Dash, html, dcc, callback, Output, Input, State, ctx
 from datetime import date
-from birddataload import get_ringing_data, get_bird_code, get_bird_translations, prep_birddata
+from birddataload import prep_birddata
 
 dash.register_page(__name__)
 
@@ -79,7 +75,7 @@ main_layout = (
                 width=12)
         ], className="mb-3"),
         dbc.Row([
-            dbc.Col([dcc.Graph(id='graph-content')],width=12)
+            dbc.Col([dcc.Graph(id='graph-content-time')],width=12)
         ])
     ], style={'fontFamily': 'Lato, sans-serif', 'marginBottom': '5px'})
 )
@@ -87,17 +83,17 @@ main_layout = (
 layout = create_layout_with_sidebar(main_layout)
 
 @callback(
-    Output('graph-content', 'figure'),
+    Output('graph-content-time', 'figure'),
     Input('my-date-picker-range', 'start_date'),
     Input('my-date-picker-range', 'end_date'),
     Input('dropdown-selection', 'value'),
     Input('aggregation-level', 'value'),
     Input('bar-mode', 'value'),
     Input('session', 'data'),
-    Input('graph-content', 'relayoutData'),
+    Input('graph-content-time', 'relayoutData'),
     Input('reset-zoom-button', 'n_clicks')
 )
-def update_graph(start_date, end_date,bird_types, aggregation_level, bar_mode, session_data, relayout_data, reset_clicks):
+def update_time_graph(start_date, end_date,bird_types, aggregation_level, bar_mode, session_data, relayout_data, reset_clicks):
     # Check if reset button was clicked
     if ctx.triggered_id == 'reset-zoom-button':
         relayout_data = None  # Reset zoom by setting relayout_data to None
@@ -268,7 +264,7 @@ def update_graph(start_date, end_date,bird_types, aggregation_level, bar_mode, s
                 # Use custom tick texts with total counts
                 tickvals=all_dates,
                 ticktext=tick_texts,
-                title='Month',
+                title='Monat',
                 # Show more ticks (labels) for months - display as many as possible
                 nticks=50,  # Set a high number to show more ticks
                 # Preserve any existing range settings
@@ -293,7 +289,7 @@ def update_graph(start_date, end_date,bird_types, aggregation_level, bar_mode, s
                 # Use custom tick texts with total counts
                 tickvals=all_years,
                 ticktext=tick_texts,
-                title='Year',
+                title='Jahr',
                 # Show all year labels
                 nticks=50,  # Set a high number to show more ticks
                 # Preserve any existing range settings

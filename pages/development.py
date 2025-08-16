@@ -2,6 +2,8 @@ import html
 import dash
 import pandas as pd
 import plotly.express as px
+import datetime
+import dash_bootstrap_components as dbc
 
 from birddataload import get_latest_euring_species_code_url, load_csv_likabrow, load_birddatatodf
 from datadupli import random_duplicate_and_increment_birdid, generate_additional_dates
@@ -9,6 +11,7 @@ from placeholder import create_placeholder_figure
 from sidebar import create_layout_with_sidebar
 from style import main_title
 from dash import Dash, html, dcc, callback, Output, Input, State, ctx
+from datetime import date
 from birddataload import get_ringing_data, get_bird_code, get_bird_translations, prep_birddata
 
 dash.register_page(__name__)
@@ -17,63 +20,76 @@ df = prep_birddata()
 
 # main page layout - currently a bar charts with number of ringings over time
 main_layout = (
-
     html.Div([
-    main_title('Lokale Bird-Analytics App mit Dash'),
-
-
-    # Dropdown for Bird Type selection (with multiple selection enabled)
-    dcc.Dropdown(
-        options=[{'label': i, 'value': i} for i in df.Name.unique()] + [{'label': 'All Birds', 'value': 'all'}],
-        value=df.Name.unique().tolist(),  # Default to all bird types selected
-        id='dropdown-selection',
-        multi=True,  # Enable multiple selection
-        style={'fontFamily': 'Leto, sans-serif'}  # Same font as the axis labels
-    ),
-
-    # Dropdown for Aggregation level (Per month or per year)
-    html.Div([
-        dcc.Dropdown(
-            options=[
-                {'label': 'Per month', 'value': 'M'},
-                {'label': 'Per year', 'value': 'Y'}
-            ],
-            value='M',  # Default to monthly aggregation
-            id='aggregation-level',
-            clearable=False,
-            style={'width': '48%', 'display': 'inline-block', 'marginRight': '2%', 'fontFamily': 'Leto, sans-serif'}
-        ),
-        dcc.Dropdown(
-            options=[
-                {'label': 'Grouped bars', 'value': 'group'},
-                {'label': 'Stacked bars', 'value': 'stack'}
-            ],
-            value='group',  # Default to grouped bars
-            id='bar-mode',
-            clearable=False,
-            style={'width': '48%', 'display': 'inline-block', 'fontFamily': 'Leto, sans-serif'}
-        ),
-        html.Button(
-            'Reset Zoom', 
-            id='reset-zoom-button',
-            style={
-                'marginTop': '10px',
-                'marginBottom': '10px',
-                'fontFamily': 'Leto, sans-serif',
-                'backgroundColor': '#f8f9fa',
-                'border': '1px solid #ddd',
-                'borderRadius': '4px',
-                'padding': '5px 10px'
-            }
-        ),
-        dcc.Graph(id='graph-content')
-    ], style={'marginTop': '20px'})
-]))
+        dbc.Row([
+            dbc.Col([main_title('Lokale Bird-Analytics App mit Dash')],
+                    width=12)
+        ]),
+        # Dropdown for Bird Type selection (with multiple selection enabled)
+        dbc.Row([
+            dbc.Col([dcc.Dropdown(
+                options=[{'label': i, 'value': i} for i in df.Name.unique()] + [{'label': 'All Birds', 'value': 'all'}],
+                value=df.Name.unique().tolist(),  # Default to all bird types selected
+                id='dropdown-selection',
+                multi=True)],  # Enable multiple selection
+                width=12
+            ),
+        ], className="mb-3"),
+        dbc.Row([
+            # Dropdown for Aggregation level (Per month or per year) as well as time filter
+            dbc.Col([dcc.DatePickerRange(
+                id='my-date-picker-range',
+                min_date_allowed=date(2000, 1, 1),
+                max_date_allowed=date(2025, 12, 31),
+                start_date=date(2023, 1, 1),
+                end_date=date(2023, 12, 31))],
+                width=4
+            ),
+            # oder '0.8em' für relative Größe
+            dbc.Col([dcc.Dropdown(
+                options=[
+                    {'label': 'Pro Monat', 'value': 'M'},
+                    {'label': 'Pro Jahr', 'value': 'J'}
+                ],
+                value='M',  # Default to monthly aggregation
+                id='aggregation-level',
+                clearable=False)], #,
+                #style={'width': '33%', 'display': 'inline-block', 'marginRight': '2%', 'fontFamily': 'Leto, sans-serif'})
+                width=4
+            ),
+            dbc.Col([dcc.Dropdown(
+                options=[
+                    {'label': 'Gruppierte Balken', 'value': 'group'},
+                    {'label': 'Gestapelte Balken', 'value': 'stack'}
+                ],
+                value='group',  # Default to grouped bars
+                id='bar-mode',
+                clearable=False)],
+                #style={'width': '33%', 'display': 'inline-block', 'fontFamily': 'Leto, sans-serif'}
+                width=4
+            )
+        ], className="mb-3"),
+        dbc.Row([
+            dbc.Col([dbc.Button(
+                'Reset Zoom',
+                id='reset-zoom-button',
+                color="primary",
+                style={'backgroundColor': '#A0522D', 'borderColor': '#A0522D'},
+                size="sm")],
+                width=12)
+        ], className="mb-3"),
+        dbc.Row([
+            dbc.Col([dcc.Graph(id='graph-content')],width=12)
+        ])
+    ], style={'fontFamily': 'Lato, sans-serif', 'marginBottom': '5px'})
+)
 
 layout = create_layout_with_sidebar(main_layout)
 
 @callback(
     Output('graph-content', 'figure'),
+    Input('my-date-picker-range', 'start_date'),
+    Input('my-date-picker-range', 'end_date'),
     Input('dropdown-selection', 'value'),
     Input('aggregation-level', 'value'),
     Input('bar-mode', 'value'),
@@ -81,7 +97,7 @@ layout = create_layout_with_sidebar(main_layout)
     Input('graph-content', 'relayoutData'),
     Input('reset-zoom-button', 'n_clicks')
 )
-def update_graph(bird_types, aggregation_level, bar_mode, session_data, relayout_data, reset_clicks):
+def update_graph(start_date, end_date,bird_types, aggregation_level, bar_mode, session_data, relayout_data, reset_clicks):
     # Check if reset button was clicked
     if ctx.triggered_id == 'reset-zoom-button':
         relayout_data = None  # Reset zoom by setting relayout_data to None
@@ -93,6 +109,14 @@ def update_graph(bird_types, aggregation_level, bar_mode, session_data, relayout
         df_filtered = df  # Include all bird types
     else:
         df_filtered = df[df['Name'].isin(bird_types)]  # Filter by selected bird types
+
+    ## Ensure time filter is taken into account
+    if start_date is not None and end_date is not None:
+        df_filtered = df_filtered[(df_filtered['Fangtag'] >= start_date) & (df_filtered['Fangtag'] <= end_date)]
+    elif start_date is not None:
+        df_filtered = df_filtered[df_filtered['Fangtag'] >= start_date]
+    elif end_date is not None:
+        df_filtered = df_filtered[df_filtered['Fangtag'] <= end_date]
 
     # Filter data for first catch only - nessecary??
     #df_filtered['IsFirstCatch'] = pd.to_numeric(df_filtered['IsFirstCatch'], errors='coerce')
@@ -113,7 +137,7 @@ def update_graph(bird_types, aggregation_level, bar_mode, session_data, relayout
     # Calculate total birds per month/year for the x-axis labels
     total_birds_per_period = dff.groupby('Aggregation')['strRingNr'].nunique().reset_index()
     total_birds_per_period.rename(columns={'strRingNr': 'TotalBirdsCount'}, inplace=True)
-    
+
     # Filter data based on zoom range if available
     zoom_filtered_dff = dff.copy()
     if relayout_data and ('xaxis.range' in relayout_data or 'xaxis.range[0]' in relayout_data):
@@ -124,9 +148,11 @@ def update_graph(bird_types, aggregation_level, bar_mode, session_data, relayout
         elif 'xaxis.range' in relayout_data:
             start_date = pd.to_datetime(relayout_data['xaxis.range'][0])
             end_date = pd.to_datetime(relayout_data['xaxis.range'][1])
-        else:
-            start_date = None
-            end_date = None
+        else: # get date from selection if no zoom
+            if start_date is not None:
+                start_date = datetime.date.fromisoformat(start_date)
+            if end_date is not None:
+                end_date = datetime.date.fromisoformat(end_date)
             
         # Apply filter if we have valid dates
         if start_date and end_date:
@@ -154,7 +180,7 @@ def update_graph(bird_types, aggregation_level, bar_mode, session_data, relayout
         total_birds_per_period['Aggregation'] = pd.to_datetime(total_birds_per_period['Aggregation'], format='%Y-%m')
 
     # Ensure that Aggregation is treated as categorical when 'Year' aggregation is selected
-    if aggregation_level == 'Y':
+    if aggregation_level == 'J':
         grouped['Aggregation'] = grouped['Aggregation'].astype(str)  # Convert to string for proper X-axis formatting
         total_birds_per_period['Aggregation'] = total_birds_per_period['Aggregation'].astype(str)
 
@@ -165,7 +191,7 @@ def update_graph(bird_types, aggregation_level, bar_mode, session_data, relayout
     is_zoomed = relayout_data and ('xaxis.range' in relayout_data or 'xaxis.range[0]' in relayout_data)
     
     # Create title with zoom indicator
-    title = 'Birds catches for ringing'
+    title = 'Birds catches'
     if is_zoomed:
         title += ' (Zoomed View)'
     

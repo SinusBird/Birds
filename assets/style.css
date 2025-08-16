@@ -1,0 +1,47 @@
+.nav-link.active {
+    background-color: transparent !important;
+    color: black !important;
+    font-weight: bold !important;
+}
+.DateInput_input {
+    font-family: inherit !important;
+    font-size: 1rem !important;  /* Gleiche Größe wie Dropdowns */
+}
+
+.DateRangePickerInput {
+    font-family: inherit !important;
+    font-size: 1rem !important;
+}
+
+/* Dropdown-Text dicker/fetter machen */
+.Select-value-label,
+.Select-placeholder,
+.Select-input > input {
+    font-weight: 300 !important;  /* oder 600 für noch dicker */
+    font-size: 16px !important;
+}
+
+/* Dropdown-Optionen in der geöffneten Liste */
+.Select-option {
+    font-weight: 300 !important;
+    font-size: 16px !important;
+}
+
+/* Multi-Select Tags (die blauen Chips) */
+.Select-multi-value-wrapper .Select-value {
+    font-weight: 300 !important;
+    font-size: 13px !important;
+}
+
+/* Dropdown Höhe anpassen */
+.Select-control {
+    min-height: 45px !important;
+    height: 45px !important;
+}
+
+/* Oder alle Dropdown-Container */
+.dash-dropdown .Select-control {
+    min-height: 45px !important;
+}
+
+/* DatePickerRange hat standardmäßig ~38px Höhe */

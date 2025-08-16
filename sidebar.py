@@ -25,7 +25,7 @@ def create_sidebar():
                         'border-radius': '5px',
                         'padding': '10px',
                         'margin-bottom': '10px',
-                        'background-color': 'white'
+                        'color': '#6c757d'
                     }
                 ),
                 dbc.NavLink(
@@ -41,7 +41,7 @@ def create_sidebar():
                         'border-radius': '5px',
                         'padding': '10px',
                         'margin-bottom': '10px',
-                        'background-color': 'white'
+                        'color': '#6c757d'
                     }
                 ),
                 dbc.NavLink(
@@ -57,10 +57,10 @@ def create_sidebar():
                         'border-radius': '5px',
                         'padding': '10px',
                         'margin-bottom': '10px',
-                        'background-color': 'white'
+                        'color': '#6c757d'
                     }
                 ),
-                dbc.Button("Logout", id="logout-button", color="danger", size="sm")
+                dbc.Button("Logout", id="logout-button", style={'backgroundColor': '#A0522D', 'borderColor': '#A0522D', 'color': 'white'},  size="sm")
             ],
             vertical=True,
             pills=True,
@@ -74,6 +74,7 @@ def create_sidebar():
         'padding': '20px 10px',
         'background-color': '#f8f9fa',
         'border-right': '1px solid #dee2e6'
+        ,'color': '#6c757d'
     })
 
 def create_layout_with_sidebar(content):

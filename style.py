@@ -11,8 +11,8 @@ BASE_HEADER_STYLE = {
     'textAlign': 'center',
     'color': '#2c3e50',
     'fontFamily': 'Leto, sans-serif',
-    'marginBottom': '20px',
-    'marginTop': '10px'
+    'marginBottom': '20px'#,
+    #'marginTop': '10px'
 }
 
 # Specific per level
@@ -21,8 +21,7 @@ HEADER_STYLES = {
         **BASE_HEADER_STYLE,
         'fontSize': '2.5rem',
         'fontWeight': 'bold',
-        'borderBottom': '3px solid #5b3a29',
-        'paddingBottom': '10px'
+        'borderBottom': '3px solid #5b3a29'
     },
     'h2': {
         **BASE_HEADER_STYLE,

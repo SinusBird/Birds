@@ -9,39 +9,11 @@ from placeholder import create_placeholder_figure
 from sidebar import create_layout_with_sidebar
 from style import main_title
 from dash import Dash, html, dcc, callback, Output, Input, State, ctx
+from birddataload import get_ringing_data, get_bird_code, get_bird_translations, prep_birddata
 
 dash.register_page(__name__)
 
-# Load data to analyze
-df = pd.read_csv('https://raw.githubusercontent.com/SinusBird/Birds/refs/heads/main/BirdCatches2.csv', encoding='unicode_escape')
-
-# Load further bird data to display names
-euring_species_url = get_latest_euring_species_code_url()
-df_birdid = load_csv_likabrow(euring_species_url)
-#print("test test ", df_birdid.head())
-
-# Load name translations --- from club500 URL, ask about usage before data publication!!!!
-df_birdnames = load_birddatatodf('https://www.club300.de/publications/wp-bird-list.php', debug=False)
-
-if df_birdnames is not None:
-    print("Bird names loaded")
-    #print(df_birdnames.head())  # Zeige die ersten Zeilen des DataFrames
-else:
-    print("No bird names available")
-
-# Merge species ID with the original dataframe to add species names
-# TBD
-
-# add more birds for catching and more time variety
-df, repeat_counts = random_duplicate_and_increment_birdid(df, max_duplicates=20, seed=42)
-df = generate_additional_dates(df, period_start='2021-01-01', period_end='2023-12-31', n_extra=2000, seed=42)
-
-# Ensure DateTimeID is in the correct datetime format, and remove rows with invalid dates
-df['DateTimeID'] = pd.to_datetime(df['DateTimeID'], errors='coerce')
-
-# Drop rows where DateTimeID could not be parsed
-df = df.dropna(subset=['DateTimeID'])
-#print("Data", df.head())
+df = prep_birddata()
 
 # main page layout - currently a bar charts with number of ringings over time
 main_layout = (
@@ -52,8 +24,8 @@ main_layout = (
 
     # Dropdown for Bird Type selection (with multiple selection enabled)
     dcc.Dropdown(
-        options=[{'label': i, 'value': i} for i in df.BirdType.unique()] + [{'label': 'All Birds', 'value': 'all'}],
-        value=df.BirdType.unique().tolist(),  # Default to all bird types selected
+        options=[{'label': i, 'value': i} for i in df.Name.unique()] + [{'label': 'All Birds', 'value': 'all'}],
+        value=df.Name.unique().tolist(),  # Default to all bird types selected
         id='dropdown-selection',
         multi=True,  # Enable multiple selection
         style={'fontFamily': 'Leto, sans-serif'}  # Same font as the axis labels
@@ -120,27 +92,27 @@ def update_graph(bird_types, aggregation_level, bar_mode, session_data, relayout
     if 'all' in bird_types or not bird_types:  # If 'all' is selected or no bird types are selected
         df_filtered = df  # Include all bird types
     else:
-        df_filtered = df[df['BirdType'].isin(bird_types)]  # Filter by selected bird types
+        df_filtered = df[df['Name'].isin(bird_types)]  # Filter by selected bird types
 
-    # Filter data for first catch only
-    df_filtered['IsFirstCatch'] = pd.to_numeric(df_filtered['IsFirstCatch'], errors='coerce')
-    dff = df_filtered[df_filtered['IsFirstCatch'] == 1]
+    # Filter data for first catch only - nessecary??
+    #df_filtered['IsFirstCatch'] = pd.to_numeric(df_filtered['IsFirstCatch'], errors='coerce')
+    dff = df_filtered #[df_filtered['IsFirstCatch'] == 1]
 
     # Add aggregation column (Month or Year)
     if aggregation_level == 'M':
-        dff['Aggregation'] = dff['DateTimeID'].dt.to_period('M').dt.strftime('%Y-%m')  # Group by month
+        dff['Aggregation'] = dff['Fangtag'].dt.to_period('M').dt.strftime('%Y-%m')  # Group by month
     elif aggregation_level == 'Y':
-        dff['Aggregation'] = dff['DateTimeID'].dt.to_period('Y').dt.strftime('%Y')  # Group by year
+        dff['Aggregation'] = dff['Fangtag'].dt.to_period('Y').dt.strftime('%Y')  # Group by year
 
     # Group by Aggregation and BirdType
-    grouped = dff.groupby(['Aggregation', 'BirdType'])['BirdID'].nunique().reset_index()
+    grouped = dff.groupby(['Aggregation', 'Name'])['strRingNr'].nunique().reset_index()
 
     # Rename BirdID to UniqueBirdCount
-    grouped.rename(columns={'BirdID': 'UniqueBirdCount'}, inplace=True)
+    grouped.rename(columns={'strRingNr': 'UniqueBirdCount'}, inplace=True)
     
     # Calculate total birds per month/year for the x-axis labels
-    total_birds_per_period = dff.groupby('Aggregation')['BirdID'].nunique().reset_index()
-    total_birds_per_period.rename(columns={'BirdID': 'TotalBirdsCount'}, inplace=True)
+    total_birds_per_period = dff.groupby('Aggregation')['strRingNr'].nunique().reset_index()
+    total_birds_per_period.rename(columns={'strRingNr': 'TotalBirdsCount'}, inplace=True)
     
     # Filter data based on zoom range if available
     zoom_filtered_dff = dff.copy()
@@ -161,20 +133,20 @@ def update_graph(bird_types, aggregation_level, bar_mode, session_data, relayout
             if aggregation_level == 'M':
                 # For monthly aggregation, filter by the actual date
                 zoom_filtered_dff = zoom_filtered_dff[
-                    (zoom_filtered_dff['DateTimeID'] >= start_date) & 
-                    (zoom_filtered_dff['DateTimeID'] <= end_date)
+                    (zoom_filtered_dff['Fangtag'] >= start_date) &
+                    (zoom_filtered_dff['Fangtag'] <= end_date)
                 ]
             elif aggregation_level == 'Y':
                 # For yearly aggregation, extract the year and filter
                 start_year = start_date.year
                 end_year = end_date.year
                 zoom_filtered_dff = zoom_filtered_dff[
-                    (zoom_filtered_dff['DateTimeID'].dt.year >= start_year) & 
-                    (zoom_filtered_dff['DateTimeID'].dt.year <= end_year)
+                    (zoom_filtered_dff['Fangtag'].dt.year >= start_year) &
+                    (zoom_filtered_dff['Fangtag'].dt.year <= end_year)
                 ]
     
     # Calculate total count per bird type for legend based on zoom-filtered data
-    bird_totals = zoom_filtered_dff.groupby('BirdType')['BirdID'].nunique().to_dict()
+    bird_totals = zoom_filtered_dff.groupby('Name')['strRingNr'].nunique().to_dict()
 
     # Convert Aggregation back to datetime for better plotting if monthly
     if aggregation_level == 'M':
@@ -193,7 +165,7 @@ def update_graph(bird_types, aggregation_level, bar_mode, session_data, relayout
     is_zoomed = relayout_data and ('xaxis.range' in relayout_data or 'xaxis.range[0]' in relayout_data)
     
     # Create title with zoom indicator
-    title = 'Birds first catches for ringing'
+    title = 'Birds catches for ringing'
     if is_zoomed:
         title += ' (Zoomed View)'
     
@@ -201,9 +173,9 @@ def update_graph(bird_types, aggregation_level, bar_mode, session_data, relayout
     fig = px.bar(grouped,
                  x='Aggregation',
                  y='UniqueBirdCount',
-                 color='BirdType',
+                 color='Name',
                  title=title,
-                 labels={'UniqueBirdCount': '', 'Aggregation': 'Date', 'BirdType': 'Bird type'},
+                 labels={'UniqueBirdCount': '', 'Aggregation': 'Date', 'Name': 'Bird type'},
                  barmode=bar_mode,  # Use stacked or grouped bars
                  color_discrete_sequence=color_scale)  # Use a custom, less vibrant color scale
 

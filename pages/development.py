@@ -1,18 +1,14 @@
-import html
 import dash
 import pandas as pd
 import plotly.express as px
 import datetime
 import dash_bootstrap_components as dbc
 
-from birddataload import get_latest_euring_species_code_url, load_csv_likabrow, load_birddatatodf
-from datadupli import random_duplicate_and_increment_birdid, generate_additional_dates
-from placeholder import create_placeholder_figure
 from sidebar import create_layout_with_sidebar
 from style import main_title
 from dash import Dash, html, dcc, callback, Output, Input, State, ctx
 from datetime import date
-from birddataload import get_ringing_data, get_bird_code, get_bird_translations, prep_birddata
+from birddataload import prep_birddata
 
 dash.register_page(__name__)
 
@@ -28,9 +24,9 @@ main_layout = (
         # Dropdown for Bird Type selection (with multiple selection enabled)
         dbc.Row([
             dbc.Col([dcc.Dropdown(
-                options=[{'label': i, 'value': i} for i in df.Name.unique()] + [{'label': 'All Birds', 'value': 'all'}],
-                value=df.Name.unique().tolist(),  # Default to all bird types selected
-                id='dropdown-selection',
+                options=[{'label': i, 'value': i} for i in df.Name.unique()] + [{'label': 'Alle Spezies', 'value': 'all'}],
+                value= 'all', # df.Name.unique().tolist(),  # Default to all bird types selected
+                id='bird-selection',
                 multi=True)],  # Enable multiple selection
                 width=12
             ),
@@ -43,7 +39,7 @@ main_layout = (
                 max_date_allowed=date(2025, 12, 31),
                 start_date=date(2023, 1, 1),
                 end_date=date(2023, 12, 31))],
-                width=4
+                width=3
             ),
             # oder '0.8em' für relative Größe
             dbc.Col([dcc.Dropdown(
@@ -54,8 +50,7 @@ main_layout = (
                 value='M',  # Default to monthly aggregation
                 id='aggregation-level',
                 clearable=False)], #,
-                #style={'width': '33%', 'display': 'inline-block', 'marginRight': '2%', 'fontFamily': 'Leto, sans-serif'})
-                width=4
+                width=3
             ),
             dbc.Col([dcc.Dropdown(
                 options=[
@@ -65,8 +60,15 @@ main_layout = (
                 value='group',  # Default to grouped bars
                 id='bar-mode',
                 clearable=False)],
-                #style={'width': '33%', 'display': 'inline-block', 'fontFamily': 'Leto, sans-serif'}
-                width=4
+                width=3
+            ),
+            dbc.Col([dcc.Dropdown(
+                options=[{'label': i, 'value': i} for i in df.strPlaceCode.unique()] + [{'label': 'Alle Orte', 'value': 'all'}],
+                value="all",  # Default to all places selected
+                id='places-selection',
+                clearable=False,
+                multi=True)],
+                width=3
             )
         ], className="mb-3"),
         dbc.Row([
@@ -77,9 +79,9 @@ main_layout = (
                 style={'backgroundColor': '#A0522D', 'borderColor': '#A0522D'},
                 size="sm")],
                 width=12)
-        ], className="mb-3"),
+        ], className="mb-0"),
         dbc.Row([
-            dbc.Col([dcc.Graph(id='graph-content')],width=12)
+            dbc.Col([dcc.Graph(id='graph-content-time')],width=12)
         ])
     ], style={'fontFamily': 'Lato, sans-serif', 'marginBottom': '5px'})
 )
@@ -87,19 +89,19 @@ main_layout = (
 layout = create_layout_with_sidebar(main_layout)
 
 @callback(
-    Output('graph-content', 'figure'),
+    Output('graph-content-time', 'figure'),
     Input('my-date-picker-range', 'start_date'),
     Input('my-date-picker-range', 'end_date'),
-    Input('dropdown-selection', 'value'),
+    Input('bird-selection', 'value'),
+    Input('places-selection', 'value'),
     Input('aggregation-level', 'value'),
     Input('bar-mode', 'value'),
-    Input('session', 'data'),
-    Input('graph-content', 'relayoutData'),
+    Input('graph-content-time', 'relayoutData'),
     Input('reset-zoom-button', 'n_clicks')
 )
-def update_graph(start_date, end_date,bird_types, aggregation_level, bar_mode, session_data, relayout_data, reset_clicks):
+def update_time_graph(start_date, end_date, bird_types, places, aggregation_level, bar_mode, relayout_data, reset_clicks): # don't mess up the sorting
     # Check if reset button was clicked
-    if ctx.triggered_id == 'reset-zoom-button':
+    if ctx.triggered_id == 'reset-zoom-button': # who pressed the button
         relayout_data = None  # Reset zoom by setting relayout_data to None
     #if not session_data or not session_data.get('authenticated'):
     #    return create_placeholder_figure("🔒 Please log in to view bird analytics")
@@ -118,9 +120,12 @@ def update_graph(start_date, end_date,bird_types, aggregation_level, bar_mode, s
     elif end_date is not None:
         df_filtered = df_filtered[df_filtered['Fangtag'] <= end_date]
 
-    # Filter data for first catch only - nessecary??
-    #df_filtered['IsFirstCatch'] = pd.to_numeric(df_filtered['IsFirstCatch'], errors='coerce')
-    dff = df_filtered #[df_filtered['IsFirstCatch'] == 1]
+    # Filter data for first catch only - ADD!!
+    # Filter data following places
+    if 'all' in places or not places:  # If 'all' is selected or no bird types are selected
+        dff = df_filtered  # Include all bird types
+    else:
+        dff = df_filtered[df_filtered['strPlaceCode'].isin(places)]  # Filter by selected bird types
 
     # Add aggregation column (Month or Year)
     if aggregation_level == 'M':
@@ -211,6 +216,7 @@ def update_graph(start_date, end_date,bird_types, aggregation_level, bar_mode, s
         'xaxis': dict(showgrid=True, gridcolor='lightgray', gridwidth=0.5),  # Make x-axis grid lines medium gray
         'yaxis': dict(showgrid=True, gridcolor='lightgray', gridwidth=0.5, showticklabels=False),  # Remove Y-axis labels
         'title': {'x': 0.5},  # Center the title
+        'margin': {'t': 50, 'b': 50, 'l': 50, 'r': 50},  # Alle Ränder
         'legend_title_text': 'Bird type',
         'height': 600  # Increase height by 30% to create more space for labels
     }
@@ -268,7 +274,7 @@ def update_graph(start_date, end_date,bird_types, aggregation_level, bar_mode, s
                 # Use custom tick texts with total counts
                 tickvals=all_dates,
                 ticktext=tick_texts,
-                title='Month',
+                title='Monat',
                 # Show more ticks (labels) for months - display as many as possible
                 nticks=50,  # Set a high number to show more ticks
                 # Preserve any existing range settings
@@ -293,7 +299,7 @@ def update_graph(start_date, end_date,bird_types, aggregation_level, bar_mode, s
                 # Use custom tick texts with total counts
                 tickvals=all_years,
                 ticktext=tick_texts,
-                title='Year',
+                title='Jahr',
                 # Show all year labels
                 nticks=50,  # Set a high number to show more ticks
                 # Preserve any existing range settings

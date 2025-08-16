@@ -11,33 +11,33 @@ BASE_HEADER_STYLE = {
     'textAlign': 'center',
     'color': '#2c3e50',
     'fontFamily': 'Leto, sans-serif',
-    'marginBottom': '20px'#,
-    #'marginTop': '10px'
+    'marginBottom': '20px',
+    'marginTop': '-80px'
 }
 
 # Specific per level
 HEADER_STYLES = {
     'h1': {
         **BASE_HEADER_STYLE,
-        'fontSize': '2.5rem',
+        'fontSize': '2rem',
         'fontWeight': 'bold',
         'borderBottom': '3px solid #5b3a29'
     },
     'h2': {
         **BASE_HEADER_STYLE,
-        'fontSize': '2rem',
+        'fontSize': '1.5rem',
         'fontWeight': '600',
         'color': '#34495e'
     },
     'h3': {
         **BASE_HEADER_STYLE,
-        'fontSize': '1.5rem',
+        'fontSize': '1rem',
         'fontWeight': '500',
         'color': '#5a6c7d'
     },
     'h4': {
         **BASE_HEADER_STYLE,
-        'fontSize': '1.2rem',
+        'fontSize': '0.9rem',
         'fontWeight': '400',
         'color': '#7f8c8d'
     }

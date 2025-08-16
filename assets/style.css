@@ -33,15 +33,33 @@
     font-size: 13px !important;
 }
 
-/* Dropdown Höhe anpassen */
-.Select-control {
-    min-height: 45px !important;
-    height: 45px !important;
+/* DatePickerRange Input-Feld kleiner machen */
+.DateInput_input {
+    padding-top: 4px !important;     /* Reduziert von 6px */
+    padding-bottom: 8px !important;  /* Reduziert von 12px */
+    line-height: 1.1 !important;     /* Reduziert von 1.2 */
+    height: 35px !important;         /* Explizite Höhe setzen */
 }
 
-/* Oder alle Dropdown-Container */
-.dash-dropdown .Select-control {
-    min-height: 45px !important;
+.DateRangePickerInput_arrow {
+    top: 50% !important;             /* Pfeil mittig ausrichten */
+}
+
+/* Dropdown Höhe anpassen */
+.Select-control {
+    min-height: 37px !important;
+    height: 37px !important;
 }
 
 /* DatePickerRange hat standardmäßig ~38px Höhe */
+
+/* DatePickerRange Text nach oben verschieben */
+.DateInput_input {
+    padding-top: 12px !important;  /* Text nach oben */
+    padding-bottom: 12px !important;  /* Mehr Platz unten */
+    line-height: 1.2 !important;
+}
+
+.DateRangePickerInput {
+    align-items: flex-start !important;  /* Container-Alignment */
+}

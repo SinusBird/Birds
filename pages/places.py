@@ -24,8 +24,8 @@ main_layout = (
         # Dropdown for Bird Type selection (with multiple selection enabled)
         dbc.Row([
             dbc.Col([dcc.Dropdown(
-                options=[{'label': i, 'value': i} for i in df.Name.unique()] + [{'label': 'All Birds', 'value': 'all'}],
-                value=df.Name.unique().tolist(),  # Default to all bird types selected
+                options=[{'label': i, 'value': i} for i in df.Name.unique()] + [{'label': 'Alle Spezies', 'value': 'all'}],
+                value='all', #df.Name.unique().tolist(),  # Default to all bird types selected
                 id='dropdown-selection',
                 multi=True)],  # Enable multiple selection
                 width=12
@@ -61,7 +61,7 @@ main_layout = (
                 style={'backgroundColor': '#A0522D', 'borderColor': '#A0522D'},
                 size="sm")],
                 width=12)
-        ], className="mb-3"),
+        ], className="mb-0"),
         dbc.Row([
             dbc.Col([dcc.Graph(id='graph-content-places')], width=12)
         ])
@@ -82,7 +82,7 @@ layout = create_layout_with_sidebar(main_layout)
 )
 def update_places_graph(start_date, end_date, bird_types, bar_mode, relayout_data,reset_clicks):
     # Check if reset button was clicked
-    if ctx.triggered_id == 'reset-zoom-button':
+    if ctx.triggered_id == 'reset-zoom-button': # who pressed the button
         relayout_data = None  # Reset zoom by setting relayout_data to None
     # if not session_data or not session_data.get('authenticated'):
     #    return create_placeholder_figure("🔒 Please log in to view bird analytics")
